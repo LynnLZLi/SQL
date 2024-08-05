@@ -344,37 +344,12 @@ Table:
 ```
 
 ```SQL
--- Calculate the number of challenges each student has created
-WITH ChallengeCounts AS (
-    SELECT
-        h.hacker_id,
-        h.name,
-        COUNT(c.challenge_id) AS num_challenges
-    FROM Hackers h
-    JOIN Challenges c ON h.hacker_id = c.hacker_id
-    GROUP BY h.hacker_id, h.name
-),
--- Find the maximum number of challenges
-MaxChallenge AS (
-    SELECT MAX(num_challenges) AS max_challenge
-    FROM ChallengeCounts
-)
--- Select students who meet the conditions
-SELECT
-    cc.hacker_id,
-    cc.name,
-    cc.num_challenges
-FROM ChallengeCounts cc
-WHERE
-    cc.num_challenges = (SELECT max_challenge FROM MaxChallenge)
-    OR (
-        -- Ensure only students with a unique number of challenges are included
-        cc.num_challenges IN (
-            SELECT num_challenges
-            FROM ChallengeCounts
-            GROUP BY num_challenges
-            HAVING COUNT(*) = 1
-        )
-    )
-ORDER BY cc.num_challenges DESC, cc.hacker_id;
+select m.hacker_id, h.name, sum(score) as total_score from
+(select hacker_id, challenge_id, max(score) as score
+from Submissions group by hacker_id, challenge_id) as m
+join Hackers as h
+on m.hacker_id = h.hacker_id
+group by m.hacker_id, h.name
+having total_score > 0
+order by total_score desc, m.hacker_id;
 ```
