@@ -61,6 +61,16 @@ JOIN COUNTRY ON CITY.COUNTRYCODE = COUNTRY.CODE
 GROUP BY COUNTRY.CONTINENT;
 ```
 
+Given the **CITY** and **COUNTRY** tables, query the names of all the continents (*COUNTRY.Continent*) and their respective average city populations (*CITY.Population*) rounded *up* to the nearest integer.
+
+```sql
+SELECT COUNTRY.CONTINENT, CEIL(AVG(CITY.POPULATION))
+FROM CITY
+JOIN COUNTRY ON CITY.COUNTRYCODE = COUNTRY.CODE
+GROUP BY COUNTRY.CONTINENT;
+```
+
+
 # The Report
 
 You are given two tables: *Students* and *Grades*. *Students* contains three columns *ID*, *Name* and *Marks*.
@@ -123,24 +133,14 @@ So, the following students got *8*, *9* or *10* grades:
 
 ```sql
 SELECT
-    CASE
-        WHEN G.GRADE < 8 THEN 'NULL'
-        ELSE S.NAME
-    END AS NAME,
-    G.GRADE,
-    S.MARKS
+CASE WHEN G.GRADE >= 8 THEN S.NAME 
+ELSE NULL
+END AS NAMES, G.GRADE, S.MARKS
+
 FROM STUDENTS S
-JOIN GRADES G ON S.MARKS BETWEEN G.MIN_MARK AND G.MAX_MARK
-ORDER BY
-    G.GRADE DESC,
-    CASE
-        WHEN G.GRADE >= 8 THEN S.NAME
-        ELSE NULL
-    END ASC,
-    CASE
-        WHEN G.GRADE < 8 THEN S.MARKS
-        ELSE NULL
-    END ASC;
+JOIN GRADES G
+ON G.MAX_MARK >= S.MARKS AND S.MARKS >= G.MIN_MARK
+ORDER BY G.GRADE DESC, S.NAME ASC, S.MARKS ASC;
 ```
 
 # Top Competitors
@@ -344,150 +344,23 @@ Table:
 ```
 
 ```SQL
-select m.hacker_id, h.name, sum(score) as total_score from
-(select hacker_id, challenge_id, max(score) as score
-from Submissions group by hacker_id, challenge_id) as m
-join Hackers as h
-on m.hacker_id = h.hacker_id
-group by m.hacker_id, h.name
-having total_score > 0
-order by total_score desc, m.hacker_id;
+-- Define a query to retrieve the maximum score per challenge for each participant
+SELECT m.hacker_id, h.name, SUM(max_score) AS total_score
+FROM (
+    -- From the submissions table, find the highest score for each participant for each challenge
+    SELECT hacker_id, challenge_id, MAX(score) AS max_score
+    FROM Submissions
+    GROUP BY hacker_id, challenge_id
+) AS m
+-- Join the above result with the hackers table to obtain the names of the participants
+JOIN Hackers AS h
+ON m.hacker_id = h.hacker_id
+-- Group the results and calculate the total score for each participant
+GROUP BY m.hacker_id, h.name
+-- Exclude participants whose total score is zero
+HAVING total_score > 0
+-- Order the results by total score in descending order, and by participant ID in ascending order in case of ties
+ORDER BY total_score DESC, m.hacker_id;
 ```
 
 
-# vosynverse-backend
-
-This repository is to store any code, README or other files made by the backend team.
-
-## Readme Files
-- [Tech Stack & Tools](readme_files/Tech_Stack_Tools.md)
-- [Names & Syntax](readme_files/Nomenclature_Syntax.md)
-- [Model Documentation](readme_files/Models_Docs.md)
-
-
-# Local Environment Setup
-### Django Project Setup
-1. Clone this repository
-2. Create a virtual environment
-    > python -m venv .venv
-3. Activate the virtual environment (Windows PowerShell)
-    > .venv\Scripts\activate
-4. Install the required packages
-    > pip install -r requirements.txt
-
-
-### PostgreSQL Database Setup and Configuration
-1. Install PostgreSQL along pgAgent (using Stack Builder),
-2. Login in the SQL Shell as superuser (psql) [[1]](https://docs.djangoproject.com/en/4.2/ref/databases/#optimizing-postgresql-s-configuration) [[2]](https://djangocentral.com/using-postgresql-with-django/) and then run the following:
-    ```sql
-    CREATE DATABASE vosynverse_db;
-    CREATE USER vvuser WITH ENCRYPTED PASSWORD 'development-env-password';
-
-    <!-- Optimizing PostgreSQL's Configuration-->
-    ALTER ROLE vvuser SET client_encoding TO 'utf8';
-    ALTER ROLE vvuser SET default_transaction_isolation TO 'read committed';
-    ALTER ROLE vvuser SET timezone TO 'UTC';
-
-    <!-- GRANT ALL PRIV.. might not be needed if we are changing the owner but I haven't checked -->
-    GRANT ALL PRIVILEGES ON DATABASE vosynverse_db TO vvuser;
-    ALTER DATABASE vosynverse_db OWNER TO vvuser;
-
-    <!-- Need to be able to create databases for testing -->
-    ALTER USER vvuser CREATEDB;
-    ```
-3. Use or copy the config/config.ini.example file to create a config.ini file in the same directory
-4. Edit the config.ini file to match the database name, user and password created in the previous steps (or copy the below example for now)
-    - config.ini:
-        ```ini
-        [Django]
-        SECRET_KEY = django-insecure-k-mdzug-&s-^@d3*#+2mymwp^z^j@0!ivwrt*e4g10=(ge0+yf
-        DEBUG = True
-        ALLOWED_HOSTS = *
-        CORS_ALLOW_ALL_ORIGINS = True
-        
-        [PostgreSQL]
-        DBNAME = vosynverse_db
-        HOST = localhost
-        PORT = 5432
-        USER = vvuser
-        PASSWORD = development-env-password
-        ```
-
-### Django Project Setup Continued
-1. Migration
-    > python manage.py migrate
-2. Run the server for testing (May not work without setting up typesense, see instructions below)
-    > python manage.py runserver
-3. Run the tests
-    > python manage.py test
-4. Note: Whenever there are changes in the model (i.e. added new fields for the video model), make sure to run this and then perform step 1:
-    > python manage.py makemigrations
- 
-
-## Expected Starting Project Structure
-
-Note: (might not be updated)
-```
-vosynverse-backend [root / this folder]
-├── .venv [ignored in git]
-│   └── ... [virtual environment files]
-├── config
-│   ├── config.ini
-│   └── config.ini.example
-├── readme_files
-│   └── ... [readme files]
-├── vv_backend
-│   ├── content
-│   │   └── ... [content app files]
-│   ├── user_interactions
-│   │   └── ... [user_interactions app files]
-│   ├── users
-│   │   └── ... [users app files]
-│   ├── vv_backend
-│   │   ├── __init__.py
-│   │   ├── asgi.py
-│   │   ├── settings.py
-│   │   ├── urls.py
-│   │   └── wsgi.py
-│   └── manage.py
-├── .gitignore
-├── README.md
-└── requirements.txt
-```
-
-## Typesense Installation
-1. To run the project, you must have typesense running locally. 
-2. Follow this guide: https://typesense.org/docs/guide/install-typesense.html
-3. After installation, you should be able to run this on your terminal:
-   - ```curl http://localhost:8108/health```
-   - And get the response: {"ok":true}
-4. Make sure that the settings from your typesense config file matches the config.ini file in the project, especially the API key.
-5. Now before you run the backend server, you must run the following commands:
-   - ```python manage.py typesense_init```
-   - ```python manage.py typesense_index```
-6. Run the backend server as expected:
-   - ```python manage.py runserver```
-
-
-## Load Sample Data 
-1. To load sample video models
-   - ```python manage.py loaddata test_user```
-2. To load sample user models
-   - ```python manage.py loaddata 239_videos```
-3. To load sample playlist models
-   - ```python manage.py loaddata test_playlists```
-
-
-## Miscellaneous Commands
-1. Django admin panel access
-   - ```python manage.py makesuperuser```
-   - Input email/username/password
-Now you can login to django admin through: http://localhost:8000/admin/
-2. Export fixture files (will export from your db to the file below)
-   - ```python -Xutf8 manage.py dumpdata --format json -o .\content\fixtures\NAME.json --traceback content```
-   - To load this file back into the db:
-   - ```python manage.py loaddata NAME```
-3. To download and process videos and then upload them to the S3 bucket.
-   - Make sure to set 'USE_S3' = False in the config.ini file if you are only testing the command.
-   - Edit the list of videos in content/management/commands/download_and_process_videos.py. Then run:
-   - ```python manage.py download_and_process_videos```
