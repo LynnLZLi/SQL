@@ -508,6 +508,26 @@ ORDER BY XXX;
 
 大多数情况下，子查询都可以被CTE代替。所以在练习时可以尽可能多的使用CTE。
 
+- **结果集合并 (Set Operations)**:
+    - **UNION**:
+        - 合并两个或多个查询的结果集，并移除重复行。
+        
+        ```sql
+        SELECT column_name FROM table1
+        UNION
+        SELECT column_name FROM table2;
+        ```
+        
+    - **UNION ALL**:
+        - 合并两个或多个查询的结果集，包括所有重复行。
+        
+        ```sql
+        SELECT column_name FROM table1
+        UNION ALL
+        SELECT column_name FROM table2;
+        ```
+        
+
 # 6. **DDL 语句 (Data Definition Language)**
 
 - **CREATE TABLE**:
@@ -523,3 +543,7 @@ ORDER BY XXX;
     ```
     
 - **DROP TABLE**:
+    
+    ```sql
+    DROP TABLE table_name;
+    ```
